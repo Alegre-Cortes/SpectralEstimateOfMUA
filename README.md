@@ -3,9 +3,9 @@ Extracting multi-unit activity (MUA) from raw electrophysiological recordings.
 
 *setParamAndOptions.m* collects parameters used to perform the analysis.
 
-*computeAndSaveAllMUAandLFP.m* extract MUA and local field potentials (LFP) from raw data.
+*computeAndSaveAllMUAandLFP.m* extracts MUA and local field potentials (LFP) from raw data.
 
-*computeSpectralEstimateOfMUA.m* extract from the raw data the MUA estimated according to the spectral approach introduced in
+*computeSpectralEstimateOfMUA.m* extracts from the raw data the MUA estimated according to the spectral approach introduced in
 
 - Mattia, M., Ferraina, S., & Del Giudice, P. (2010).
   Dissociated multi-unit activity and local field potentials: A theory inspired analysis of a motor decision task.
