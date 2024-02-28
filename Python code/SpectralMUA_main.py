@@ -9,7 +9,7 @@ import os
 from scipy.signal import find_peaks 
 from scipy.stats import zscore
 %matplotlib qt
-
+import SpectralMUA_library
 #%% Functions to use
 
 
@@ -150,6 +150,23 @@ for i in range(0,len(DLS.T)):
 values = []
 values.append(np.mean(MSN_traces,axis=0))
 values.append(np.mean(MSN_traces,axis=0)) """
+for k in range(0,len(MSN_traces)):
+    mua = SpectralMUA_library.computeMUA(MSN_traces[k])
+    logMUA = np.log(mua)
+    logMUA = SpectralMUA_library.smooth(logMUA,16) #80 ms smoothing as in Capone Cerebral Cortex 2020
+    logMUA = logMUA[8:]
+    parameters, Pfc_UDs_MUA = SpectralMUA_library.compute_UDs_logMUA(np.asarray(np.vstack((logMUA,logMUA))))
+    #Note that the above line is extracting peaks from the MUA...
+    #It can be correct, but I still need to validate it
+    Pfc_UDs = []
+    for i in range(0,len(Pfc_UDs_MUA)):
+        Pfc_UDs[i] = np.repeat(Pfc_UDs_MUA[i],5) #Upsample UDs to 1 KHz check them in the LFP when required
+        #Note that I'm upsampling to 1 KHz, but I need 20k to extract properly the 
+        # MUA, so original LFPs should be downsampled to match
+#%%
+#######################
+####OLD VERSIONS#######
+#######################
 
 for k in range(0,len(MSN_traces)):
     parameters, Pfc_UDs = compute_parameters(np.asarray(np.vstack((MSN_traces[k],MSN_traces[k]))))

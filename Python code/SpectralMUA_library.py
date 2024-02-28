@@ -13,27 +13,7 @@ from scipy.stats import zscore
 import numpy as np
 from scipy.signal import detrend, welch
 
-
-def smooth(x,window_len=11,window='flat'):
-    """smooth the data using a window with requested size.
-
-    input:
-        x: the input signal 
-        window_len: the dimension of the smoothing window; should be an odd integer
-        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
-            flat window will produce a moving average smoothing.
-
-    """
-
-    s=np.r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
-    #print(len(s))
-    if window == 'flat': #moving average
-        w=np.ones(window_len,'d')
-    else:
-        w=eval('np.'+window+'(window_len)')
-
-    y=np.convolve(w/w.sum(),s,mode='valid')
-    return y
+"""Original functions from Maurizio, converted to Python using Gemini"""
 
 def plot_median_psd_of_lfp(lfp, moving_window_size, detrending_order=2):
   """
@@ -168,6 +148,28 @@ def compute_spectral_estimate_of_mua(t, lfp, muafreq_band, plot_power_spectrum=F
   t = np.mean(t[:fft_window_size * sample_num].reshape(fft_window_size, sample_num), axis=0)
 
   return t, mua
+#%% 
+def smooth(x,window_len=11,window='flat'):
+    """smooth the data using a window with requested size.
+
+    input:
+        x: the input signal 
+        window_len: the dimension of the smoothing window; should be an odd integer
+        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
+            flat window will produce a moving average smoothing.
+
+    """
+
+    s=np.r_[x[window_len-1:0:-1],x,x[-2:-window_len-1:-1]]
+    #print(len(s))
+    if window == 'flat': #moving average
+        w=np.ones(window_len,'d')
+    else:
+        w=eval('np.'+window+'(window_len)')
+
+    y=np.convolve(w/w.sum(),s,mode='valid')
+    return y
+
 
 
 def computeMUA(x, sampling_freq = 20000,window_size = 5, muafreq_band = [200, 1500]):
@@ -185,3 +187,102 @@ def computeMUA(x, sampling_freq = 20000,window_size = 5, muafreq_band = [200, 15
     ndxF = np.where((f > muafreq_band[0] - 2.0) & (f < muafreq_band[1] + 2.0))[0]
     norm_pyy = pyy[:,ndxF] / np.tile(psd_median[ndxF],(len(pyy),1))
     mua = np.mean(norm_pyy, axis=1)
+    return mua
+
+
+
+
+def compute_UDs_logMUA(dataset):
+#      global dataset, parameters
+    cell = []
+    features = []
+    UDs = []
+    x = dataset
+    for num in range(np.squeeze(np.shape(x[:,0]))):
+        
+            a = smooth(x[num,:], window_len=24)
+            a = a[12:]
+            a = np.transpose(a)
+            UD = []
+            D2U =[]
+            U2D = []
+            partition = int(np.round(np.size(a)/5))
+            # for i in range(0,np.size(a)-partition,partition):
+            for i in range(0,np.size(a),partition):
+                temp = a[i:i+partition]
+                thresh = np.mean(temp)+(0.5*np.std(temp))
+                temp_UD = np.zeros(np.size(temp))
+                for j in range(np.size(temp)):
+                        if temp[j]>=thresh:
+                            temp_UD[j] = 1
+                UD.extend(temp_UD)
+            UD = np.asarray(UD)
+            for i in range(np.size(UD)-1):
+                if (UD[i]==0 and UD[i+1]==1):
+                    D2U.append(i)
+                elif (UD[i]==1 and UD[i+1]==0):
+                    U2D.append(i)
+            D2U = np.asarray(D2U)
+            U2D = np.asarray(U2D)
+            for i in range(1,np.size(U2D)):
+                temp = D2U[D2U>U2D[i]]
+                if (np.size(temp)>0 and temp[0] - U2D[i]<50):
+                    UD[U2D[i]-1:temp[0]+1] = 1
+                
+            D2U = []
+            U2D = []
+            for i in range(np.size(UD)-1):
+                if (UD[i]==0 and UD[i+1]==1):
+                    D2U.append(i)
+                elif (UD[i]==1 and UD[i+1]==0):
+                    U2D.append(i)
+            D2U = np.asarray(D2U)
+            U2D = np.asarray(U2D)
+            for i in range(np.size(D2U)):
+                temp = U2D[U2D>[D2U[i]]]
+                if (np.size(temp)>0 and temp[0]-D2U[i]<4):
+                    UD[D2U[i]:temp[0]+1] = 0
+        
+            D2U = []
+            U2D = []
+            for i in range(np.size(UD)-1):
+                if (UD[i]==0 and UD[i+1]==1):
+                    D2U.append(i)
+                elif (UD[i]==1 and UD[i+1]==0):
+                    U2D.append(i)
+    
+            D2U = np.asarray(D2U)
+            U2D = np.asarray(U2D)  
+            UDs.append(UD)
+            for i in range(1,np.size(D2U)-1):
+                temp = U2D[U2D>D2U[i]]   
+                if (np.size(temp)>0 and temp[0] -D2U[i]>40):
+                    Up = x[num,D2U[i]:temp[0]]
+                    trans = []
+
+                    #peaks = find_peaks(zscore(smooth(Up, window_len=round(200*17))), distance=160*17, height=.3)
+                    peaks = find_peaks(zscore(smooth(Up, window_len=round(40))), distance=32, height=.6)
+                    
+                    ####
+                    #This one gets a better corr with Glu, so I need to check if I'm
+                    #detecting all peaks correctly
+                    #peaks = find_peaks(zscore(smooth(Up, window_len=round(200*17))), distance=160*17, height=1)
+                    ####
+                    trans.append(np.size(peaks[0]))
+                    trans.append(np.size(Up))
+                    trans = np.asarray(trans)
+                    features.append(np.transpose(trans))
+                    cell.append(num)
+    features = np.asarray(features)
+
+    
+    parameters = np.zeros((np.size(np.unique(cell)),2))
+    for i in range(np.size(np.unique(cell))):                  
+        for j in range(2):
+                index = [k for (k,val) in enumerate(cell) if val==i]
+                parameters[i,j] = np.mean(features[index,j])
+
+
+
+
+    return parameters, UDs
