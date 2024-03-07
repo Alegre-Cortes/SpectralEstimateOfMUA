@@ -1,17 +1,29 @@
+#%%Import libraries
 import neo
 import numpy as np
 import matplotlib.pyplot as plt
 from os import listdir
 from os.path import isfile, join
 import os 
-import SpectralMUA_library
+#import SpectralMUA_library
 %matplotlib qt
 
 
 #%%
-LFPs_path = r"D:\Javier\Papers\Dl-Dm Striatum\Data & Code\Dorsolateral data\SMRs"
+
+import sys
+sys.path.append(r"C:\Users\Javie\Documents\GitHub\SpectralEstimateOfMUA\Python code")
+import SpectralMUA_library
+#%%
+#Path at laptop
+LFPs_path = r"G:\My Drive\Manuscript SWO\Clean LFP exploration code\SMR\DLS"
+#Path at desktop
+#LFPs_path = r"D:\Javier\Papers\Dl-Dm Striatum\Data & Code\Dorsolateral data\SMRs"LFPs_list = [f for f in listdir(LFPs_path) if isfile(join(LFPs_path, f))]
+
 LFPs_list = [f for f in listdir(LFPs_path) if isfile(join(LFPs_path, f))]
-all_features = []
+
+#%%
+""" all_features = []
 all_UDs = []
 for rec in range(0,len(LFPs_list)):
     filename = os.path.join(LFPs_path+'/'+LFPs_list[rec])
@@ -37,7 +49,7 @@ for rec in range(0,len(LFPs_list)):
     Pfc_UDs = []
     for i in range(0,len(Pfc_UDs_MUA)):
         Pfc_UDs.append(np.repeat(Pfc_UDs_MUA[i],5*motor['fs']/1000))
-
+ """
 #%%
 
 MUAs = []
@@ -108,4 +120,4 @@ for rec in range(0,len(LFPs_list)):
     MUA_UDs.append(temp_mua_UD)
     all_UDs.append(temp_UD)
     all_features.append(temp_features)
-    del temp_mua, temp_mua_UD, temp_UD
+    del temp_mua, temp_mua_UD, temp_UD, temp_DLS

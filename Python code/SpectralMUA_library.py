@@ -7,7 +7,7 @@ from os.path import isfile, join
 import os 
 from scipy.signal import find_peaks 
 from scipy.stats import zscore
-
+from scipy.signal import butter, sosfilt
 #%%
 import numpy as np
 from scipy.signal import detrend, welch
@@ -199,8 +199,9 @@ def compute_UDs_logMUA(dataset):
     x = dataset
     for num in range(np.squeeze(np.shape(x[:,0]))):
         
-            a = smooth(x[num,:], window_len=24)
-            a = a[12:]
+            #a = smooth(x[num,:], window_len=24)
+            #a = a[12:]
+            a = x[num,:]  # Try without smoothing since I already smoothed the MUA before
             a = np.transpose(a)
             UD = []
             D2U =[]
@@ -209,7 +210,8 @@ def compute_UDs_logMUA(dataset):
             # for i in range(0,np.size(a)-partition,partition):
             for i in range(0,np.size(a),partition):
                 temp = a[i:i+partition]
-                thresh = np.mean(temp)+(0.5*np.std(temp))
+                #thresh = np.mean(temp)+(0.5*np.std(temp))
+                thresh = np.mean(temp)+(1.5*np.std(temp))
                 #thresh = np.mean(temp)
                 temp_UD = np.zeros(np.size(temp))
                 for j in range(np.size(temp)):
@@ -272,6 +274,11 @@ def compute_UDs_logMUA(dataset):
                     ####
                     trans.append(np.size(peaks[0]))
                     trans.append(np.size(Up))
+                    try:
+                        trans.append(D2U[i]-U2D[i-1])
+                    except:
+                        pass
+                    trans.append(D2U[i])
                     trans = np.asarray(trans)
                     features.append(np.transpose(trans))
                     cell.append(num)
@@ -293,7 +300,13 @@ def compute_UDs_logMUA(dataset):
 
 def compute_logMUA_UDs(data,fs):
     mua = computeMUA(data,sampling_freq = fs)
-    logMUA = np.log(mua)
+
+    #Added to compensate the strange oscillations in MUA power
+    sos = butter(2, 1, 'hp', fs=200, output='sos')
+    #mua = sosfilt(sos, mua)
+    ###
+    logMUA = np.log(abs(mua))
+    logMUA = sosfilt(sos,logMUA)
     logMUA = smooth(logMUA,16) #80 ms smoothing as in Capone Cerebral Cortex 2020
     logMUA = logMUA[8:]
     parameters, Pfc_UDs_MUA,features = compute_UDs_logMUA(np.asarray(np.vstack((logMUA,logMUA))))
