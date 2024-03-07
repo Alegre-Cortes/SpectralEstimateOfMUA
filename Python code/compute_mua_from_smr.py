@@ -120,4 +120,4 @@ for rec in range(0,len(LFPs_list)):
     MUA_UDs.append(temp_mua_UD)
     all_UDs.append(temp_UD)
     all_features.append(temp_features)
-    del temp_mua, temp_mua_UD, temp_UD, temp_DLS
+    del temp_mua, temp_mua_UD, temp_UD, temp_DLS,temp_features
