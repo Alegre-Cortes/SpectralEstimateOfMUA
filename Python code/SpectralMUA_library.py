@@ -7,7 +7,6 @@ from os.path import isfile, join
 import os 
 from scipy.signal import find_peaks 
 from scipy.stats import zscore
-%matplotlib qt
 
 #%%
 import numpy as np
@@ -211,6 +210,7 @@ def compute_UDs_logMUA(dataset):
             for i in range(0,np.size(a),partition):
                 temp = a[i:i+partition]
                 thresh = np.mean(temp)+(0.5*np.std(temp))
+                #thresh = np.mean(temp)
                 temp_UD = np.zeros(np.size(temp))
                 for j in range(np.size(temp)):
                         if temp[j]>=thresh:
@@ -240,7 +240,8 @@ def compute_UDs_logMUA(dataset):
             U2D = np.asarray(U2D)
             for i in range(np.size(D2U)):
                 temp = U2D[U2D>[D2U[i]]]
-                if (np.size(temp)>0 and temp[0]-D2U[i]<4):
+                #if (np.size(temp)>0 and temp[0]-D2U[i]<4):
+                if (np.size(temp)>0 and temp[0]-D2U[i]<20):
                     UD[D2U[i]:temp[0]+1] = 0
         
             D2U = []
@@ -256,12 +257,13 @@ def compute_UDs_logMUA(dataset):
             UDs.append(UD)
             for i in range(1,np.size(D2U)-1):
                 temp = U2D[U2D>D2U[i]]   
-                if (np.size(temp)>0 and temp[0] -D2U[i]>40):
+                #if (np.size(temp)>0 and temp[0] -D2U[i]>40):
+                if (np.size(temp)>0 and temp[0] -D2U[i]>20):
                     Up = x[num,D2U[i]:temp[0]]
                     trans = []
 
                     #peaks = find_peaks(zscore(smooth(Up, window_len=round(200*17))), distance=160*17, height=.3)
-                    peaks = find_peaks(zscore(smooth(Up, window_len=round(40))), distance=32, height=.6)
+                    peaks = find_peaks(zscore(smooth(Up, window_len=round(20))), distance=32, height=.6)
                     
                     ####
                     #This one gets a better corr with Glu, so I need to check if I'm
@@ -285,4 +287,37 @@ def compute_UDs_logMUA(dataset):
 
 
 
-    return parameters, UDs
+    return parameters, UDs,features
+
+
+
+def compute_logMUA_UDs(data,fs):
+    mua = computeMUA(data,sampling_freq = fs)
+    logMUA = np.log(mua)
+    logMUA = smooth(logMUA,16) #80 ms smoothing as in Capone Cerebral Cortex 2020
+    logMUA = logMUA[8:]
+    parameters, Pfc_UDs_MUA,features = compute_UDs_logMUA(np.asarray(np.vstack((logMUA,logMUA))))
+    #Note that the above line is extracting peaks from the MUA...
+    #It can be correct, but I still need to validate it
+    Pfc_UDs = []
+    for i in range(0,len(Pfc_UDs_MUA)):
+        #Pfc_UDs.append(np.repeat(Pfc_UDs_MUA[i],int(5*data['fs']/1000)))
+        Pfc_UDs.append(np.repeat(Pfc_UDs_MUA[i],int(5*fs/1000)))
+    return logMUA, Pfc_UDs_MUA, Pfc_UDs, features
+    
+
+def obtain_onsets(UDs):
+    D2U  = []
+    U2D = []
+    for k in range(len(UDs)):
+        temp_D2U = []
+        temp_U2D = []
+        for i in range(len(UDs[k])-1):
+            if ((UDs[k][i]==0) and (UDs[k][i+1]==1)):
+                temp_D2U.append(i)
+            elif ((UDs[k][i]==1) and (UDs[k][i+1]==0)):
+                temp_U2D.append(i)
+        D2U.append(np.asarray(temp_D2U))
+        U2D.append(np.asarray(temp_U2D))
+                   
+    return D2U, U2D
