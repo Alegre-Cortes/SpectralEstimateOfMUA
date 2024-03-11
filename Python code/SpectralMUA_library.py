@@ -211,7 +211,7 @@ def compute_UDs_logMUA(dataset):
             for i in range(0,np.size(a),partition):
                 temp = a[i:i+partition]
                 #thresh = np.mean(temp)+(0.5*np.std(temp))
-                thresh = np.mean(temp)+(1.5*np.std(temp))
+                thresh = np.mean(temp)+(1.*np.std(temp))
                 #thresh = np.mean(temp)
                 temp_UD = np.zeros(np.size(temp))
                 for j in range(np.size(temp)):
@@ -277,7 +277,7 @@ def compute_UDs_logMUA(dataset):
                     try:
                         trans.append(D2U[i]-U2D[i-1])
                     except:
-                        pass
+                        trans.append(np.nan)
                     trans.append(D2U[i])
                     trans = np.asarray(trans)
                     features.append(np.transpose(trans))
