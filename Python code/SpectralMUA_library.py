@@ -175,7 +175,17 @@ def computeMUA(x, sampling_freq = 20000,window_size = 5, muafreq_band = [200, 15
     """Extracts the MUA stimate of an individual signal following 
     the pipeline shared by Maurizio 26/02/2024"""
     window = int(window_size*sampling_freq/1000)
-    x = np.reshape(x,(int(np.round(len(x)/window)),window))
+
+    ##############
+    num_rows = np.ceil(len(x) / window).astype(int)
+    total_size = num_rows * window
+    # Create a padded array of zeros
+    padded_array = np.zeros(total_size)
+    # Copy the original array into the start of the padded array
+    padded_array[:len(x)] = x
+    x = padded_array.reshape(num_rows, window)
+    ##############
+    #x = np.reshape(x,(int(np.round(len(x)/window)),window))
 
     f, pyy = welch(x, fs=sampling_freq, window='hann', nperseg=window)
 
@@ -210,8 +220,8 @@ def compute_UDs_logMUA(dataset):
             # for i in range(0,np.size(a)-partition,partition):
             for i in range(0,np.size(a),partition):
                 temp = a[i:i+partition]
-                #thresh = np.mean(temp)+(0.5*np.std(temp))
-                thresh = np.mean(temp)+(1.*np.std(temp))
+                thresh = np.mean(temp)+(0.5*np.std(temp))
+                #thresh = np.mean(temp)+(1.*np.std(temp))
                 #thresh = np.mean(temp)
                 temp_UD = np.zeros(np.size(temp))
                 for j in range(np.size(temp)):
@@ -244,6 +254,7 @@ def compute_UDs_logMUA(dataset):
                 temp = U2D[U2D>[D2U[i]]]
                 #if (np.size(temp)>0 and temp[0]-D2U[i]<4):
                 if (np.size(temp)>0 and temp[0]-D2U[i]<20):
+                #if (np.size(temp)>0 and temp[0]-D2U[i]<16): #Testing on 20240711
                     UD[D2U[i]:temp[0]+1] = 0
         
             D2U = []
@@ -306,7 +317,7 @@ def compute_logMUA_UDs(data,fs):
     #mua = sosfilt(sos, mua)
     ###
     logMUA = np.log(abs(mua))
-    logMUA = sosfilt(sos,logMUA)
+    #logMUA = sosfilt(sos,logMUA)
     logMUA = smooth(logMUA,16) #80 ms smoothing as in Capone Cerebral Cortex 2020
     logMUA = logMUA[8:]
     parameters, Pfc_UDs_MUA,features = compute_UDs_logMUA(np.asarray(np.vstack((logMUA,logMUA))))
